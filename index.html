@@ -1,0 +1,788 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Tool Tìm Kiếm Lưới In</title>
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🔍</text></svg>">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Inter', 'Segoe UI', system-ui, -apple-system, sans-serif;
+        }
+        
+        :root {
+            --primary: #2563eb;
+            --primary-dark: #1d4ed8;
+            --secondary: #64748b;
+            --success: #10b981;
+            --background: #f8fafc;
+            --surface: #ffffff;
+            --text: #1e293b;
+            --text-light: #64748b;
+            --border: #e2e8f0;
+            --shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
+            --radius: 12px;
+            --highlight: #fff9c4;
+        }
+        
+        body {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: var(--text);
+            line-height: 1.6;
+            min-height: 100vh;
+            padding: 20px;
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+        
+        .app-card {
+            background: var(--surface);
+            border-radius: var(--radius);
+            box-shadow: var(--shadow);
+            overflow: hidden;
+            margin-bottom: 20px;
+        }
+        
+        header {
+            background: linear-gradient(135deg, var(--primary), var(--primary-dark));
+            color: white;
+            padding: 30px;
+            text-align: center;
+        }
+        
+        .logo {
+            font-size: 2.5rem;
+            margin-bottom: 10px;
+        }
+        
+        h1 {
+            font-size: 2rem;
+            font-weight: 700;
+            margin-bottom: 8px;
+        }
+        
+        .subtitle {
+            font-size: 1.1rem;
+            opacity: 0.9;
+            font-weight: 400;
+        }
+        
+        .search-section {
+            padding: 30px;
+            border-bottom: 1px solid var(--border);
+        }
+        
+        .search-container {
+            max-width: 600px;
+            margin: 0 auto;
+        }
+        
+        .search-box {
+            display: flex;
+            gap: 12px;
+            margin-bottom: 16px;
+        }
+        
+        input[type="text"] {
+            flex: 1;
+            padding: 16px 20px;
+            border: 2px solid var(--border);
+            border-radius: var(--radius);
+            font-size: 16px;
+            transition: all 0.3s ease;
+            background: var(--background);
+        }
+        
+        input[type="text"]:focus {
+            outline: none;
+            border-color: var(--primary);
+            box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
+        }
+        
+        button {
+            background: var(--primary);
+            color: white;
+            border: none;
+            padding: 16px 28px;
+            border-radius: var(--radius);
+            cursor: pointer;
+            font-size: 16px;
+            font-weight: 600;
+            transition: all 0.3s ease;
+            white-space: nowrap;
+        }
+        
+        button:hover {
+            background: var(--primary-dark);
+            transform: translateY(-1px);
+            box-shadow: 0 4px 12px rgba(37, 99, 235, 0.3);
+        }
+        
+        button:active {
+            transform: translateY(0);
+        }
+        
+        .suggestion {
+            color: var(--text-light);
+            font-size: 14px;
+            text-align: center;
+        }
+        
+        .code-number {
+            font-weight: 600;
+            color: var(--primary);
+            background: rgba(37, 99, 235, 0.1);
+            padding: 2px 6px;
+            border-radius: 4px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+        
+        .code-number:hover {
+            background: rgba(37, 99, 235, 0.2);
+        }
+        
+        .results-section {
+            padding: 0;
+        }
+        
+        .summary-card {
+            background: linear-gradient(135deg, #dbeafe, #e0f2fe);
+            padding: 24px;
+            margin: 0;
+            border-radius: 0;
+            border-bottom: 1px solid var(--border);
+        }
+        
+        .summary-title {
+            font-size: 1.25rem;
+            font-weight: 700;
+            color: var(--primary);
+            margin-bottom: 16px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        .summary-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 16px;
+        }
+        
+        .summary-item {
+            background: white;
+            padding: 16px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+        }
+        
+        .summary-code {
+            font-weight: 700;
+            color: var(--primary);
+            font-size: 1.1rem;
+            margin-bottom: 4px;
+        }
+        
+        .summary-count {
+            color: var(--success);
+            font-weight: 600;
+            font-size: 0.9rem;
+        }
+        
+        .results-container {
+            padding: 24px;
+        }
+        
+        .result-group {
+            margin-bottom: 32px;
+        }
+        
+        .result-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            padding-bottom: 12px;
+            border-bottom: 2px solid var(--border);
+        }
+        
+        .result-title {
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: var(--primary);
+        }
+        
+        .result-count {
+            background: var(--primary);
+            color: white;
+            padding: 6px 12px;
+            border-radius: 20px;
+            font-size: 0.9rem;
+            font-weight: 600;
+        }
+        
+        .results-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
+            gap: 20px;
+        }
+        
+        .result-card {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            padding: 20px;
+            transition: all 0.3s ease;
+            cursor: pointer;
+        }
+        
+        .result-card:hover {
+            transform: translateY(-2px);
+            box-shadow: var(--shadow);
+            border-color: var(--primary);
+        }
+        
+        .card-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            margin-bottom: 16px;
+            padding-bottom: 16px;
+            border-bottom: 1px solid var(--border);
+        }
+        
+        .stt-container {
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+        }
+        
+        .stt-label {
+            font-size: 0.8rem;
+            color: var(--text-light);
+            font-weight: 500;
+        }
+        
+        .stt-value {
+            font-weight: 700;
+            color: var(--primary);
+            font-size: 1.1rem;
+        }
+        
+        .date-container {
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+            text-align: right;
+        }
+        
+        .date-label {
+            font-size: 0.8rem;
+            color: var(--text-light);
+            font-weight: 500;
+        }
+        
+        .date-value {
+            font-weight: 600;
+            color: var(--text);
+            font-size: 0.95rem;
+        }
+        
+        .content {
+            margin-bottom: 20px;
+            line-height: 1.5;
+            padding: 12px;
+            background: var(--background);
+            border-radius: 8px;
+        }
+        
+        .highlight {
+            background-color: var(--highlight);
+            padding: 2px 4px;
+            border-radius: 4px;
+            font-weight: 600;
+        }
+        
+        .details {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 16px;
+        }
+        
+        .detail-item {
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+        }
+        
+        .detail-label {
+            font-size: 0.8rem;
+            color: var(--text-light);
+            font-weight: 500;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+        
+        .detail-value {
+            font-weight: 600;
+            color: var(--text);
+            padding: 8px 12px;
+            background: var(--background);
+            border-radius: 6px;
+            border-left: 3px solid var(--primary);
+        }
+        
+        .no-results {
+            text-align: center;
+            padding: 60px 20px;
+            color: var(--text-light);
+        }
+        
+        .no-results-icon {
+            font-size: 4rem;
+            margin-bottom: 20px;
+            opacity: 0.5;
+        }
+        
+        .no-results h3 {
+            font-size: 1.5rem;
+            margin-bottom: 12px;
+            color: var(--text);
+        }
+        
+        .loading {
+            text-align: center;
+            padding: 60px 20px;
+            color: var(--text-light);
+        }
+        
+        .loading-spinner {
+            width: 40px;
+            height: 40px;
+            border: 4px solid var(--border);
+            border-top: 4px solid var(--primary);
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 20px;
+        }
+        
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        
+        .error {
+            background: #fef2f2;
+            color: #dc2626;
+            padding: 20px;
+            border-radius: var(--radius);
+            border-left: 4px solid #dc2626;
+            margin: 20px;
+        }
+        
+        .ready-message {
+            text-align: center;
+            padding: 40px 20px;
+            color: var(--text-light);
+        }
+        
+        .ready-icon {
+            font-size: 3rem;
+            margin-bottom: 16px;
+            color: var(--success);
+        }
+        
+        @media (max-width: 768px) {
+            .search-box {
+                flex-direction: column;
+            }
+            
+            .results-grid {
+                grid-template-columns: 1fr;
+            }
+            
+            .summary-grid {
+                grid-template-columns: 1fr;
+            }
+            
+            header {
+                padding: 20px;
+            }
+            
+            h1 {
+                font-size: 1.75rem;
+            }
+            
+            .details {
+                grid-template-columns: 1fr;
+            }
+        }
+        
+        @media (max-width: 480px) {
+            body {
+                padding: 10px;
+            }
+            
+            .search-section, .results-container {
+                padding: 20px;
+            }
+            
+            .card-header {
+                flex-direction: column;
+                gap: 12px;
+                align-items: flex-start;
+            }
+            
+            .date-container {
+                text-align: left;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="app-card">
+            <header>
+                <div class="logo">🔍</div>
+                <h1>Tool Tìm Kiếm Lưới In</h1>
+                <div class="subtitle">Tìm kiếm nhanh chóng và chính xác</div>
+            </header>
+            
+            <div class="search-section">
+                <div class="search-container">
+                    <div class="search-box">
+                        <input type="text" id="searchInput" placeholder="Nhập mã số cần tìm (ví dụ: 1000102, 1433079, 1424106)">
+                        <button id="searchButton">Tìm Kiếm</button>
+                    </div>
+                    <div class="suggestion">
+                        <strong>Gợi ý:</strong> Thử tìm mã số <span class="code-number" data-code="1433079">1433079</span> hoặc <span class="code-number" data-code="1424106">1424106</span> để thấy kết quả
+                    </div>
+                </div>
+            </div>
+            
+            <div id="resultsSection" class="results-section">
+                <div class="loading">
+                    <div class="loading-spinner"></div>
+                    <p>Đang tải dữ liệu từ Google Sheets...</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // URL của Google Sheet CSV
+        const CSV_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vQnGg42Bo-HuHVWr9ArftVArDrOHl3Yp6CCe-iU9Q7f7CeXjuslTXRapfP8LjkRfw/pub?output=csv';
+        
+        // Biến lưu trữ dữ liệu từ Google Sheet
+        let sheetData = [];
+        
+        // Hàm tải dữ liệu từ Google Sheet CSV
+        async function loadSheetData() {
+            try {
+                showLoading('Đang tải dữ liệu từ Google Sheets...');
+                
+                const response = await fetch(CSV_URL);
+                if (!response.ok) {
+                    throw new Error(`Lỗi HTTP: ${response.status}`);
+                }
+                
+                const csvText = await response.text();
+                
+                // Chuyển đổi CSV thành mảng đối tượng
+                sheetData = parseCSV(csvText);
+                console.log('Dữ liệu đã tải:', sheetData);
+                
+                // Ẩn trạng thái loading
+                hideLoading();
+                
+                // Hiển thị thông báo sẵn sàng
+                showReadyMessage();
+                
+            } catch (error) {
+                console.error('Lỗi khi tải dữ liệu:', error);
+                showError('Không thể tải dữ liệu từ Google Sheet. Vui lòng kiểm tra kết nối internet và thử lại.');
+            }
+        }
+        
+        // Hàm phân tích CSV
+        function parseCSV(csvText) {
+            const lines = csvText.split('\n').filter(line => line.trim());
+            const result = [];
+            
+            if (lines.length === 0) return result;
+            
+            // Lấy tiêu đề cột (xử lý cả trường hợp có BOM)
+            const headers = lines[0].split(',').map(header => 
+                header.trim().replace(/^\uFEFF/, '') // Loại bỏ BOM nếu có
+            );
+            
+            // Xử lý từng dòng dữ liệu
+            for (let i = 1; i < lines.length; i++) {
+                const line = lines[i].trim();
+                if (!line) continue;
+                
+                const obj = {};
+                const values = parseCSVLine(line);
+                
+                headers.forEach((header, index) => {
+                    obj[header] = (values[index] || '').trim();
+                });
+                
+                result.push(obj);
+            }
+            
+            return result;
+        }
+        
+        // Hàm phân tích dòng CSV, xử lý trường hợp có dấu phẩy trong giá trị
+        function parseCSVLine(line) {
+            const result = [];
+            let current = '';
+            let inQuotes = false;
+            
+            for (let i = 0; i < line.length; i++) {
+                const char = line[i];
+                
+                if (char === '"') {
+                    inQuotes = !inQuotes;
+                } else if (char === ',' && !inQuotes) {
+                    result.push(current);
+                    current = '';
+                } else {
+                    current += char;
+                }
+            }
+            
+            result.push(current);
+            return result.map(value => value.replace(/^"|"$/g, '').trim()); // Loại bỏ dấu ngoặc kép
+        }
+        
+        // Hàm highlight mã số trong nội dung
+        function highlightCode(content, codes) {
+            let highlightedContent = content;
+            codes.forEach(code => {
+                const regex = new RegExp(`(${code})`, 'gi');
+                highlightedContent = highlightedContent.replace(regex, '<span class="highlight">$1</span>');
+            });
+            return highlightedContent;
+        }
+        
+        // Hàm hiển thị loading
+        function showLoading(message) {
+            const resultsSection = document.getElementById('resultsSection');
+            resultsSection.innerHTML = `
+                <div class="loading">
+                    <div class="loading-spinner"></div>
+                    <p>${message}</p>
+                </div>
+            `;
+        }
+        
+        // Hàm ẩn loading
+        function hideLoading() {
+            // Chỉ ẩn nếu đang hiển thị loading
+            const resultsSection = document.getElementById('resultsSection');
+            if (resultsSection.querySelector('.loading')) {
+                resultsSection.innerHTML = '';
+            }
+        }
+        
+        // Hàm hiển thị thông báo sẵn sàng
+        function showReadyMessage() {
+            const resultsSection = document.getElementById('resultsSection');
+            resultsSection.innerHTML = `
+                <div class="ready-message">
+                    <div class="ready-icon">✅</div>
+                    <h3>Dữ liệu đã sẵn sàng!</h3>
+                    <p>Hãy nhập mã số để bắt đầu tìm kiếm</p>
+                </div>
+            `;
+        }
+        
+        // Hàm hiển thị lỗi
+        function showError(message) {
+            const resultsSection = document.getElementById('resultsSection');
+            resultsSection.innerHTML = `<div class="error">${message}</div>`;
+        }
+        
+        // Hàm tìm kiếm mã số trong dữ liệu
+        function searchCodes(searchText) {
+            if (!searchText.trim()) {
+                return {};
+            }
+            
+            // Tách các mã số từ input (có thể nhập nhiều mã số phân cách bằng dấu phẩy)
+            const searchCodes = searchText.split(',')
+                .map(code => code.trim())
+                .filter(code => code);
+            
+            // Tìm kiếm các bản ghi chứa ít nhất một trong các mã số
+            const results = {};
+            
+            searchCodes.forEach(code => {
+                results[code] = sheetData.filter(row => {
+                    // Kiểm tra mã số trong cột "Nội dung bên trong lưới"
+                    const content = row['Nội dung bên trong lưới'] || '';
+                    return content.includes(code);
+                });
+            });
+            
+            return results;
+        }
+        
+        // Hàm hiển thị kết quả
+        function displayResults(searchResults) {
+            const resultsSection = document.getElementById('resultsSection');
+            
+            // Xóa kết quả cũ
+            resultsSection.innerHTML = '';
+            
+            // Tổng hợp kết quả
+            let totalResults = 0;
+            let foundCodes = [];
+            
+            Object.keys(searchResults).forEach(code => {
+                if (searchResults[code].length > 0) {
+                    totalResults += searchResults[code].length;
+                    foundCodes.push(code);
+                }
+            });
+            
+            // Hiển thị tổng hợp kết quả
+            if (totalResults > 0) {
+                // Tạo summary card
+                const summaryDiv = document.createElement('div');
+                summaryDiv.className = 'summary-card';
+                
+                let summaryHTML = `
+                    <div class="summary-title">
+                        <span>📊 TỔNG HỢP KẾT QUẢ</span>
+                    </div>
+                    <div class="summary-grid">
+                `;
+                
+                foundCodes.forEach(code => {
+                    const count = searchResults[code].length;
+                    summaryHTML += `
+                        <div class="summary-item">
+                            <div class="summary-code">${code}</div>
+                            <div class="summary-count">${count} lưới</div>
+                        </div>
+                    `;
+                });
+                
+                summaryHTML += `</div>`;
+                summaryDiv.innerHTML = summaryHTML;
+                resultsSection.appendChild(summaryDiv);
+                
+                // Tạo container cho kết quả chi tiết
+                const resultsContainer = document.createElement('div');
+                resultsContainer.className = 'results-container';
+                
+                // Hiển thị chi tiết kết quả
+                foundCodes.forEach(code => {
+                    const codeGroup = document.createElement('div');
+                    codeGroup.className = 'result-group';
+                    
+                    let codeHTML = `
+                        <div class="result-header">
+                            <div class="result-title">Mã số: ${code}</div>
+                            <div class="result-count">${searchResults[code].length} kết quả</div>
+                        </div>
+                        <div class="results-grid">
+                    `;
+                    
+                    searchResults[code].forEach((item, index) => {
+                        const highlightedContent = highlightCode(item['Nội dung bên trong lưới'] || 'N/A', [code]);
+                        const kichThuoc = item['Kiến thuớc lưới'] || item['Kích thước lưới'] || 'N/A';
+                        const chatLieu = item['Chất liệu'] || 'N/A';
+                        
+                        codeHTML += `
+                            <div class="result-card">
+                                <div class="card-header">
+                                    <div class="stt-container">
+                                        <div class="stt-label">STT</div>
+                                        <div class="stt-value">${item.STT || 'N/A'}</div>
+                                    </div>
+                                    <div class="date-container">
+                                        <div class="date-label">Ngày làm</div>
+                                        <div class="date-value">${item['Ngày làm'] || 'N/A'}</div>
+                                    </div>
+                                </div>
+                                <div class="content">${highlightedContent}</div>
+                                <div class="details">
+                                    <div class="detail-item">
+                                        <div class="detail-label">Kích thước</div>
+                                        <div class="detail-value">${kichThuoc}</div>
+                                    </div>
+                                    <div class="detail-item">
+                                        <div class="detail-label">Chất liệu</div>
+                                        <div class="detail-value">${chatLieu}</div>
+                                    </div>
+                                </div>
+                            </div>
+                        `;
+                    });
+                    
+                    codeHTML += `</div>`;
+                    codeGroup.innerHTML = codeHTML;
+                    resultsContainer.appendChild(codeGroup);
+                });
+                
+                resultsSection.appendChild(resultsContainer);
+            } else {
+                resultsSection.innerHTML = `
+                    <div class="no-results">
+                        <div class="no-results-icon">🔍</div>
+                        <h3>Không tìm thấy kết quả</h3>
+                        <p>Không tìm thấy kết quả nào cho mã số đã nhập.<br>Vui lòng thử với mã số khác.</p>
+                    </div>
+                `;
+            }
+        }
+        
+        // Hàm khởi tạo
+        async function init() {
+            // Tải dữ liệu từ Google Sheet
+            await loadSheetData();
+            
+            // Thêm sự kiện cho nút tìm kiếm
+            document.getElementById('searchButton').addEventListener('click', handleSearch);
+            
+            // Thêm sự kiện cho phím Enter
+            document.getElementById('searchInput').addEventListener('keypress', (e) => {
+                if (e.key === 'Enter') {
+                    handleSearch();
+                }
+            });
+            
+            // Thêm sự kiện cho các mã số gợi ý
+            document.querySelectorAll('.code-number').forEach(element => {
+                element.addEventListener('click', () => {
+                    document.getElementById('searchInput').value = element.getAttribute('data-code');
+                    handleSearch();
+                });
+            });
+        }
+        
+        // Hàm xử lý tìm kiếm
+        function handleSearch() {
+            const searchText = document.getElementById('searchInput').value;
+            if (searchText.trim()) {
+                const searchResults = searchCodes(searchText);
+                displayResults(searchResults);
+            }
+        }
+        
+        // Khởi chạy ứng dụng khi trang tải xong
+        document.addEventListener('DOMContentLoaded', init);
+    </script>
+</body>
+</html>
