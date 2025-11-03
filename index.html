@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Tool Tìm Kiếm Lưới In</title>
+    <title>Công cụ tìm lưới in nhanh</title>
     <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🔍</text></svg>">
     <style>
         * {
@@ -54,6 +54,7 @@
             color: white;
             padding: 30px;
             text-align: center;
+            position: relative;
         }
         
         .logo {
@@ -71,6 +72,13 @@
             font-size: 1.1rem;
             opacity: 0.9;
             font-weight: 400;
+            margin-bottom: 5px;
+        }
+        
+        .author {
+            font-size: 0.9rem;
+            opacity: 0.8;
+            font-style: italic;
         }
         
         .search-section {
@@ -451,8 +459,9 @@
         <div class="app-card">
             <header>
                 <div class="logo">🔍</div>
-                <h1>Tool Tìm Kiếm Lưới In</h1>
+                <h1>Công cụ tìm lưới in nhanh</h1>
                 <div class="subtitle">Tìm kiếm nhanh chóng và chính xác</div>
+                <div class="author">Made by SAM</div>
             </header>
             
             <div class="search-section">
@@ -564,10 +573,11 @@
             return result.map(value => value.replace(/^"|"$/g, '').trim()); // Loại bỏ dấu ngoặc kép
         }
         
-        // Hàm highlight mã số trong nội dung
+        // Hàm highlight mã số trong nội dung (không phân biệt hoa thường)
         function highlightCode(content, codes) {
             let highlightedContent = content;
             codes.forEach(code => {
+                // Tạo regex với flag 'gi' (global, case-insensitive)
                 const regex = new RegExp(`(${code})`, 'gi');
                 highlightedContent = highlightedContent.replace(regex, '<span class="highlight">$1</span>');
             });
@@ -612,7 +622,7 @@
             resultsSection.innerHTML = `<div class="error">${message}</div>`;
         }
         
-        // Hàm tìm kiếm mã số trong dữ liệu
+        // Hàm tìm kiếm mã số trong dữ liệu (không phân biệt hoa thường)
         function searchCodes(searchText) {
             if (!searchText.trim()) {
                 return {};
@@ -628,9 +638,10 @@
             
             searchCodes.forEach(code => {
                 results[code] = sheetData.filter(row => {
-                    // Kiểm tra mã số trong cột "Nội dung bên trong lưới"
+                    // Kiểm tra mã số trong cột "Nội dung bên trong lưới" (không phân biệt hoa thường)
                     const content = row['Nội dung bên trong lưới'] || '';
-                    return content.includes(code);
+                    // Chuyển cả nội dung và mã số về chữ thường để so sánh
+                    return content.toLowerCase().includes(code.toLowerCase());
                 });
             });
             
