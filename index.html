@@ -260,13 +260,16 @@
         /* ─── SUMMARY CARD ───────────────────────────────────────── */
         .summary-card {
             background: linear-gradient(135deg, rgba(37, 99, 235, 0.06), rgba(124, 58, 237, 0.06));
-            backdrop-filter: blur(10px);
-            -webkit-backdrop-filter: blur(10px);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
             border: 1px solid rgba(37, 99, 235, 0.12);
             border-radius: var(--radius-lg);
             padding: 28px 32px;
-            box-shadow: var(--shadow-sm);
+            box-shadow: var(--shadow);
             margin-bottom: 0;
+            position: sticky;
+            top: 20px;
+            z-index: 100;
         }
 
         .summary-title {
@@ -283,7 +286,7 @@
 
         .summary-grid {
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+            grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
             gap: 12px;
         }
 
@@ -293,11 +296,27 @@
             border-radius: 12px;
             box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
             border: 1px solid rgba(255, 255, 255, 0.8);
-            transition: transform 0.2s ease;
+            transition: all 0.2s ease;
+            cursor: default;
         }
 
-        .summary-item:hover {
-            transform: translateY(-1px);
+        .summary-item.clickable {
+            cursor: pointer;
+        }
+
+        .summary-item.clickable:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(37, 99, 235, 0.15);
+            border-color: rgba(37, 99, 235, 0.25);
+        }
+
+        .summary-item.clickable:active {
+            transform: translateY(0);
+        }
+
+        .summary-item.zero-result {
+            background: rgba(255, 255, 255, 0.55);
+            opacity: 0.7;
         }
 
         .summary-code {
@@ -310,10 +329,84 @@
             background-clip: text;
         }
 
+        .summary-item.zero-result .summary-code {
+            background: none;
+            -webkit-text-fill-color: var(--text-muted);
+            color: var(--text-muted);
+        }
+
         .summary-count {
             color: var(--success);
             font-weight: 600;
             font-size: 0.85rem;
+        }
+
+        .summary-count.zero {
+            color: #dc2626;
+        }
+
+        /* ─── MISSING SECTION ────────────────────────────────────── */
+        .missing-section {
+            margin-top: 20px;
+            padding-top: 20px;
+            border-top: 1px solid rgba(220, 38, 38, 0.15);
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            flex-wrap: wrap;
+        }
+
+        .missing-title {
+            font-size: 0.75rem;
+            font-weight: 700;
+            color: #dc2626;
+            display: flex;
+            align-items: center;
+            gap: 5px;
+            text-transform: uppercase;
+            letter-spacing: 0.07em;
+            white-space: nowrap;
+            flex-shrink: 0;
+        }
+
+        .missing-title svg {
+            color: #dc2626;
+            stroke: #dc2626;
+            flex-shrink: 0;
+        }
+
+        .missing-list {
+            flex: 1;
+            font-size: 0.88rem;
+            font-weight: 600;
+            color: var(--text);
+            background: rgba(220, 38, 38, 0.05);
+            border: 1px solid rgba(220, 38, 38, 0.15);
+            border-radius: 8px;
+            padding: 8px 14px;
+            word-break: break-all;
+            line-height: 1.6;
+        }
+
+        .copy-btn {
+            background: rgba(220, 38, 38, 0.08);
+            color: #dc2626;
+            border: 1px solid rgba(220, 38, 38, 0.25);
+            padding: 8px 16px;
+            border-radius: 8px;
+            font-size: 0.8rem;
+            font-weight: 600;
+            box-shadow: none;
+            white-space: nowrap;
+            flex-shrink: 0;
+            transition: all 0.2s ease;
+        }
+
+        .copy-btn:hover {
+            background: rgba(220, 38, 38, 0.14);
+            transform: none;
+            box-shadow: none;
+            filter: none;
         }
 
         /* ─── RESULTS CONTAINER ──────────────────────────────────── */
@@ -809,6 +902,11 @@
             return result.map(value => value.replace(/^"|"$/g, '').trim()); // Loại bỏ dấu ngoặc kép
         }
 
+        // Hàm tạo id an toàn từ mã số
+        function codeToId(code) {
+            return 'group_' + code.replace(/[^a-zA-Z0-9]/g, '_');
+        }
+
         // Hàm escape HTML để tránh XSS
         function escapeHTML(str) {
             return String(str)
@@ -900,20 +998,12 @@
             // Xóa kết quả cũ
             resultsSection.innerHTML = '';
 
-            // Tổng hợp kết quả
-            let totalResults = 0;
-            let foundCodes = [];
+            const allCodes = Object.keys(searchResults);
+            const foundCodes = allCodes.filter(c => searchResults[c].length > 0);
+            const totalResults = foundCodes.reduce((sum, c) => sum + searchResults[c].length, 0);
 
-            Object.keys(searchResults).forEach(code => {
-                if (searchResults[code].length > 0) {
-                    totalResults += searchResults[code].length;
-                    foundCodes.push(code);
-                }
-            });
-
-            // Hiển thị tổng hợp kết quả
-            if (totalResults > 0) {
-                // Tạo summary card
+            if (totalResults > 0 || allCodes.length > 1) {
+                // Tạo summary card (sticky)
                 const summaryDiv = document.createElement('div');
                 summaryDiv.className = 'summary-card';
 
@@ -924,75 +1014,116 @@
                     <div class="summary-grid">
                 `;
 
-                foundCodes.forEach(code => {
+                allCodes.forEach(code => {
                     const count = searchResults[code].length;
+                    const hasResult = count > 0;
                     summaryHTML += `
-                        <div class="summary-item">
+                        <div class="summary-item ${hasResult ? 'clickable' : 'zero-result'}" data-target="${codeToId(code)}">
                             <div class="summary-code">${escapeHTML(code)}</div>
-                            <div class="summary-count">${count} lưới</div>
+                            <div class="summary-count${hasResult ? '' : ' zero'}">${count} lưới</div>
                         </div>
                     `;
                 });
 
                 summaryHTML += `</div>`;
-                summaryDiv.innerHTML = summaryHTML;
-                resultsSection.appendChild(summaryDiv);
 
-                // Tạo container cho kết quả chi tiết
-                const resultsContainer = document.createElement('div');
-                resultsContainer.className = 'results-container';
+                // Mục "Lưới cần bổ sung" — các keyword không có kết quả
+                const zeroCodes = allCodes
+                    .filter(c => searchResults[c].length === 0)
+                    .sort((a, b) => a.localeCompare(b, undefined, { numeric: true, sensitivity: 'base' }));
 
-                // Hiển thị chi tiết kết quả
-                foundCodes.forEach(code => {
-                    const codeGroup = document.createElement('div');
-                    codeGroup.className = 'result-group';
-
-                    let codeHTML = `
-                        <div class="result-header">
-                            <div class="result-title">Mã số: ${escapeHTML(code)}</div>
-                            <div class="result-count">${searchResults[code].length} kết quả</div>
-                        </div>
-                        <div class="results-grid">
-                    `;
-
-                    searchResults[code].forEach((item, index) => {
-                        const highlightedContent = highlightCode(item['Nội dung bên trong lưới'] || 'N/A', [code]);
-                        const kichThuoc = escapeHTML(item['Kiến thuớc lưới'] || item['Kích thước lưới'] || 'N/A');
-                        const chatLieu = escapeHTML(item['Chất liệu'] || 'N/A');
-
-                        codeHTML += `
-                            <div class="result-card">
-                                <div class="card-header">
-                                    <div class="stt-container">
-                                        <div class="stt-label">STT</div>
-                                        <div class="stt-value">${escapeHTML(item.STT || 'N/A')}</div>
-                                    </div>
-                                    <div class="date-container">
-                                        <div class="date-label">Ngày làm</div>
-                                        <div class="date-value">${escapeHTML(item['Ngày làm'] || 'N/A')}</div>
-                                    </div>
-                                </div>
-                                <div class="content">${highlightedContent}</div>
-                                <div class="details">
-                                    <div class="detail-item">
-                                        <div class="detail-label">Kích thước</div>
-                                        <div class="detail-value">${kichThuoc}</div>
-                                    </div>
-                                    <div class="detail-item">
-                                        <div class="detail-label">Chất liệu</div>
-                                        <div class="detail-value">${chatLieu}</div>
-                                    </div>
-                                </div>
+                if (zeroCodes.length > 0) {
+                    const listText = zeroCodes.join(', ');
+                    summaryHTML += `
+                        <div class="missing-section">
+                            <div class="missing-title">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+                                LƯỚI CẦN BỔ SUNG
                             </div>
-                        `;
-                    });
+                            <div class="missing-list" id="missingList">${escapeHTML(listText)}</div>
+                            <button class="copy-btn" onclick="
+                                navigator.clipboard.writeText(document.getElementById('missingList').textContent);
+                                this.textContent = 'Đã sao chép!';
+                                setTimeout(() => this.textContent = 'Sao chép', 1800);
+                            ">Sao chép</button>
+                        </div>
+                    `;
+                }
 
-                    codeHTML += `</div>`;
-                    codeGroup.innerHTML = codeHTML;
-                    resultsContainer.appendChild(codeGroup);
+                summaryDiv.innerHTML = summaryHTML;
+
+                // Gắn sự kiện click cuộn tới kết quả tương ứng
+                summaryDiv.querySelectorAll('.summary-item.clickable').forEach(item => {
+                    item.addEventListener('click', () => {
+                        const target = document.getElementById(item.dataset.target);
+                        if (target) {
+                            // Tính offset để không bị che bởi summary sticky
+                            const summaryHeight = summaryDiv.getBoundingClientRect().height;
+                            const top = target.getBoundingClientRect().top + window.scrollY - summaryHeight - 32;
+                            window.scrollTo({ top, behavior: 'smooth' });
+                        }
+                    });
                 });
 
-                resultsSection.appendChild(resultsContainer);
+                resultsSection.appendChild(summaryDiv);
+
+                if (totalResults > 0) {
+                    // Tạo container cho kết quả chi tiết
+                    const resultsContainer = document.createElement('div');
+                    resultsContainer.className = 'results-container';
+
+                    foundCodes.forEach(code => {
+                        const codeGroup = document.createElement('div');
+                        codeGroup.className = 'result-group';
+                        codeGroup.id = codeToId(code);
+
+                        let codeHTML = `
+                            <div class="result-header">
+                                <div class="result-title">Mã số: ${escapeHTML(code)}</div>
+                                <div class="result-count">${searchResults[code].length} kết quả</div>
+                            </div>
+                            <div class="results-grid">
+                        `;
+
+                        searchResults[code].forEach((item) => {
+                            const highlightedContent = highlightCode(item['Nội dung bên trong lưới'] || 'N/A', [code]);
+                            const kichThuoc = escapeHTML(item['Kiến thuớc lưới'] || item['Kích thước lưới'] || 'N/A');
+                            const chatLieu = escapeHTML(item['Chất liệu'] || 'N/A');
+
+                            codeHTML += `
+                                <div class="result-card">
+                                    <div class="card-header">
+                                        <div class="stt-container">
+                                            <div class="stt-label">STT</div>
+                                            <div class="stt-value">${escapeHTML(item.STT || 'N/A')}</div>
+                                        </div>
+                                        <div class="date-container">
+                                            <div class="date-label">Ngày làm</div>
+                                            <div class="date-value">${escapeHTML(item['Ngày làm'] || 'N/A')}</div>
+                                        </div>
+                                    </div>
+                                    <div class="content">${highlightedContent}</div>
+                                    <div class="details">
+                                        <div class="detail-item">
+                                            <div class="detail-label">Kích thước</div>
+                                            <div class="detail-value">${kichThuoc}</div>
+                                        </div>
+                                        <div class="detail-item">
+                                            <div class="detail-label">Chất liệu</div>
+                                            <div class="detail-value">${chatLieu}</div>
+                                        </div>
+                                    </div>
+                                </div>
+                            `;
+                        });
+
+                        codeHTML += `</div>`;
+                        codeGroup.innerHTML = codeHTML;
+                        resultsContainer.appendChild(codeGroup);
+                    });
+
+                    resultsSection.appendChild(resultsContainer);
+                }
             } else {
                 resultsSection.innerHTML = `
                     <div class="no-results">
