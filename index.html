@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>WEB TÌM LƯỚI IN NHANH</title>
+    <title>CÔNG CỤ TÌM LƯỚI IN</title>
     <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🔍</text></svg>">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <style>
@@ -255,6 +255,9 @@
         /* ─── RESULTS SECTION ────────────────────────────────────── */
         .results-section {
             padding: 0;
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
         }
 
         /* ─── SUMMARY CARD ───────────────────────────────────────── */
@@ -384,11 +387,18 @@
             color: #dc2626;
         }
 
-        /* ─── MISSING SECTION ────────────────────────────────────── */
+        /* ─── MISSING CARD (separate, not sticky) ────────────────── */
+        .missing-card {
+            background: rgba(254, 242, 242, 0.7);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border: 1px solid rgba(220, 38, 38, 0.12);
+            border-radius: var(--radius-lg);
+            padding: 16px 24px;
+            box-shadow: var(--shadow);
+        }
+
         .missing-section {
-            margin-top: 20px;
-            padding-top: 20px;
-            border-top: 1px solid rgba(220, 38, 38, 0.15);
             display: flex;
             align-items: center;
             gap: 12px;
@@ -770,13 +780,17 @@
             }
 
             .summary-card {
-                padding: 12px 16px;
-                top: 8px;
+                padding: 10px 14px;
+                top: 6px;
             }
 
             .summary-body {
-                max-height: 45vh;
+                max-height: 35vh;
                 overflow-y: auto;
+            }
+
+            .missing-card {
+                padding: 12px 16px;
             }
 
             .result-group {
@@ -1077,30 +1091,6 @@
                 });
 
                 summaryHTML += `</div>`; // close summary-grid
-
-                // Mục "Lưới cần bổ sung" — các keyword không có kết quả
-                const zeroCodes = allCodes
-                    .filter(c => searchResults[c].length === 0)
-                    .sort((a, b) => a.localeCompare(b, undefined, { numeric: true, sensitivity: 'base' }));
-
-                if (zeroCodes.length > 0) {
-                    const listText = zeroCodes.join(', ');
-                    summaryHTML += `
-                        <div class="missing-section">
-                            <div class="missing-title">
-                                <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
-                                LƯỚI CẦN BỔ SUNG
-                            </div>
-                            <div class="missing-list" id="missingList">${escapeHTML(listText)}</div>
-                            <button class="copy-btn" onclick="
-                                navigator.clipboard.writeText(document.getElementById('missingList').textContent);
-                                this.textContent = 'Đã sao chép!';
-                                setTimeout(() => this.textContent = 'Sao chép', 1800);
-                            ">Sao chép</button>
-                        </div>
-                    `;
-                }
-
                 summaryHTML += `</div>`; // close summary-body
                 summaryDiv.innerHTML = summaryHTML;
 
@@ -1114,7 +1104,6 @@
                     item.addEventListener('click', () => {
                         const target = document.getElementById(item.dataset.target);
                         if (target) {
-                            // Tính offset để không bị che bởi summary sticky
                             const summaryHeight = summaryDiv.getBoundingClientRect().height;
                             const top = target.getBoundingClientRect().top + window.scrollY - summaryHeight - 32;
                             window.scrollTo({ top, behavior: 'smooth' });
@@ -1123,6 +1112,32 @@
                 });
 
                 resultsSection.appendChild(summaryDiv);
+
+                // Mục "Lưới cần bổ sung" — card riêng, KHÔNG sticky
+                const zeroCodes = allCodes
+                    .filter(c => searchResults[c].length === 0)
+                    .sort((a, b) => a.localeCompare(b, undefined, { numeric: true, sensitivity: 'base' }));
+
+                if (zeroCodes.length > 0) {
+                    const listText = zeroCodes.join(', ');
+                    const missingDiv = document.createElement('div');
+                    missingDiv.className = 'missing-card';
+                    missingDiv.innerHTML = `
+                        <div class="missing-section">
+                            <div class="missing-title">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+                                LƯỚI CẦN BỔ SUNG (${zeroCodes.length})
+                            </div>
+                            <div class="missing-list" id="missingList">${escapeHTML(listText)}</div>
+                            <button class="copy-btn" onclick="
+                                navigator.clipboard.writeText(document.getElementById('missingList').textContent);
+                                this.textContent = 'Đã sao chép!';
+                                setTimeout(() => this.textContent = 'Sao chép', 1800);
+                            ">Sao chép</button>
+                        </div>
+                    `;
+                    resultsSection.appendChild(missingDiv);
+                }
 
                 if (totalResults > 0) {
                     // Tạo container cho kết quả chi tiết
