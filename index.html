@@ -268,7 +268,7 @@
             box-shadow: var(--shadow);
             margin-bottom: 0;
             position: sticky;
-            top: 20px;
+            top: 12px;
             z-index: 100;
         }
 
@@ -276,28 +276,66 @@
             font-size: 0.8rem;
             font-weight: 700;
             color: var(--text-light);
-            margin-bottom: 10px;
+            margin-bottom: 0;
             display: flex;
             align-items: center;
             gap: 8px;
             text-transform: uppercase;
             letter-spacing: 0.08em;
+            cursor: pointer;
+            user-select: none;
+            -webkit-user-select: none;
+        }
+
+        .summary-title .toggle-icon {
+            margin-left: auto;
+            font-size: 0.7rem;
+            transition: transform 0.25s ease;
+            color: var(--text-muted);
+        }
+
+        .summary-card.collapsed .toggle-icon {
+            transform: rotate(-90deg);
+        }
+
+        .summary-title .summary-brief {
+            font-weight: 500;
+            font-size: 0.75rem;
+            color: var(--text-muted);
+            margin-left: 4px;
+        }
+
+        .summary-body {
+            overflow: hidden;
+            transition: max-height 0.3s ease, opacity 0.25s ease, margin-top 0.3s ease;
+            max-height: 600px;
+            opacity: 1;
+            margin-top: 10px;
+        }
+
+        .summary-card.collapsed .summary-body {
+            max-height: 0;
+            opacity: 0;
+            margin-top: 0;
         }
 
         .summary-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+            display: flex;
+            flex-wrap: wrap;
             gap: 8px;
         }
 
         .summary-item {
             background: rgba(255, 255, 255, 0.9);
-            padding: 10px 14px;
-            border-radius: 12px;
+            padding: 6px 12px;
+            border-radius: 10px;
             box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
             border: 1px solid rgba(255, 255, 255, 0.8);
             transition: all 0.2s ease;
             cursor: default;
+            display: flex;
+            align-items: center;
+            gap: 8px;
         }
 
         .summary-item.clickable {
@@ -321,12 +359,12 @@
 
         .summary-code {
             font-weight: 700;
-            font-size: 1rem;
-            margin-bottom: 5px;
+            font-size: 0.88rem;
             background: var(--gradient);
             -webkit-background-clip: text;
             -webkit-text-fill-color: transparent;
             background-clip: text;
+            white-space: nowrap;
         }
 
         .summary-item.zero-result .summary-code {
@@ -338,7 +376,8 @@
         .summary-count {
             color: var(--success);
             font-weight: 600;
-            font-size: 0.85rem;
+            font-size: 0.78rem;
+            white-space: nowrap;
         }
 
         .summary-count.zero {
@@ -730,8 +769,14 @@
                 grid-template-columns: 1fr;
             }
 
-            .summary-grid {
-                grid-template-columns: 1fr;
+            .summary-card {
+                padding: 12px 16px;
+                top: 8px;
+            }
+
+            .summary-body {
+                max-height: 45vh;
+                overflow-y: auto;
             }
 
             .result-group {
@@ -1007,10 +1052,16 @@
                 const summaryDiv = document.createElement('div');
                 summaryDiv.className = 'summary-card';
 
+                const missingCount = allCodes.filter(c => searchResults[c].length === 0).length;
+                const briefText = `${foundCodes.length}/${allCodes.length} mã có kết quả` + (missingCount > 0 ? ` · ${missingCount} thiếu` : '');
+
                 let summaryHTML = `
-                    <div class="summary-title">
+                    <div class="summary-title" onclick="this.closest('.summary-card').classList.toggle('collapsed')">
                         <span>📊 TỔNG HỢP KẾT QUẢ</span>
+                        <span class="summary-brief">(${briefText})</span>
+                        <span class="toggle-icon">▼</span>
                     </div>
+                    <div class="summary-body">
                     <div class="summary-grid">
                 `;
 
@@ -1025,7 +1076,7 @@
                     `;
                 });
 
-                summaryHTML += `</div>`;
+                summaryHTML += `</div>`; // close summary-grid
 
                 // Mục "Lưới cần bổ sung" — các keyword không có kết quả
                 const zeroCodes = allCodes
@@ -1050,7 +1101,13 @@
                     `;
                 }
 
+                summaryHTML += `</div>`; // close summary-body
                 summaryDiv.innerHTML = summaryHTML;
+
+                // Auto-collapse trên mobile khi có nhiều mã
+                if (allCodes.length > 3 && window.innerWidth <= 768) {
+                    summaryDiv.classList.add('collapsed');
+                }
 
                 // Gắn sự kiện click cuộn tới kết quả tương ứng
                 summaryDiv.querySelectorAll('.summary-item.clickable').forEach(item => {
